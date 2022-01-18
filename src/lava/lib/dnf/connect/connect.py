@@ -60,7 +60,7 @@ def connect(
 
     # create Connections process and connect it:
     # source -> connections -> destination
-    connections, reshape1, reshape2 = _make_connections(src_op, dst_ip, weights, sign_mode, print)
+    connections, reshape1, reshape2 = _make_connections(src_op, dst_ip, weights, sign_mode)
 
     return connections, reshape1, reshape2
 
