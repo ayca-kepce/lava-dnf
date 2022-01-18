@@ -19,8 +19,8 @@ def connect(
     src_op: OutPort,
     dst_ip: InPort,
     ops: ty.Optional[ty.Union[ty.List[AbstractOperation],
-                              AbstractOperation]] = None
-) -> AbstractProcess:
+                              AbstractOperation]] = None,
+    sign_mode: int = 1) -> AbstractProcess:
     """
     Creates and returns a Connections Process <conn> and connects the source
     OutPort <src_op> to the InPort of <conn> and the OutPort of <conn> to the
@@ -60,9 +60,9 @@ def connect(
 
     # create Connections process and connect it:
     # source -> connections -> destination
-    connections = _make_connections(src_op, dst_ip, weights)
+    connections, reshape1, reshape2 = _make_connections(src_op, dst_ip, weights, sign_mode, print)
 
-    return connections
+    return connections, reshape1, reshape2
 
 
 def _configure_ops(
@@ -197,7 +197,8 @@ def _compute_weights(ops: ty.List[AbstractOperation]) -> np.ndarray:
 
 def _make_connections(src_op: OutPort,
                       dst_ip: InPort,
-                      weights: np.ndarray) -> AbstractProcess:
+                      weights: np.ndarray,
+                      sign_mode: int) -> AbstractProcess:
     """
     Creates a Connections Process with the given weights and connects its
     ports such that:
@@ -220,13 +221,12 @@ def _make_connections(src_op: OutPort,
     """
 
     # Create the connections process
-    connections = Dense(shape=weights.shape,
-                        weights=weights)
+    connections = Dense(shape=weights.shape, weights=weights, sign_mode=sign_mode)
 
     # Make connections from the source port to the connections process
     # TODO (MR) workaround in absence of ReshapePorts
     con_ip = connections.s_in
-    rs1 = ReshapeBool(shape_in=src_op.shape, shape_out=con_ip.shape)
+    rs1 = ReshapeInt(shape_in=src_op.shape, shape_out=con_ip.shape)
     src_op.connect(rs1.s_in)
     rs1.s_out.connect(con_ip)
 
@@ -237,4 +237,4 @@ def _make_connections(src_op: OutPort,
     con_op.connect(rs2.s_in)
     rs2.s_out.connect(dst_ip)
 
-    return connections
+    return connections, rs1, rs2
