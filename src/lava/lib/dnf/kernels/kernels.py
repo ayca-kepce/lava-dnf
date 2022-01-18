@@ -274,3 +274,33 @@ class MultiPeakKernel(GaussianMixin, Kernel):
                                      stddev=self._width_inh)
 
         return local_excitation + mid_range_inhibition
+
+class ConvolutionKernel(Kernel):
+    """
+    A kernel that is created based on the array that is provided.
+
+    Parameters
+    ----------
+    template : ndarray
+        the matrix provided as the convolution kernel
+
+    limit : float
+        determines the size/shape of the kernel such that the weight matrix
+        will have the size 2*limit*width_exc; defaults to 1
+
+    """
+    def __init__(self,
+                 template: np.ndarray,
+                 limit: ty.Optional[float] = 1.0) -> None:
+
+
+        self.template = template
+        self.shape = template.shape
+
+        weights = self._compute_weights()
+        Kernel.__init__(self, weights=weights, padding_value=0)
+
+    def _compute_weights(self) -> np.ndarray:
+        weights = self.template
+
+        return weights
