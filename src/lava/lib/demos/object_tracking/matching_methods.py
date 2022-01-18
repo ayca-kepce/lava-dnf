@@ -32,7 +32,7 @@ from lava.lib.demos.object_tracking.processes import (TemplateMatching,
                                                       TemplateNormalization,
                                                       FrameInput,
                                                       FrameNormalization)
-from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron_cpy, one_input_neuron, two_input_neuron, two_input_neuron_squares
+from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, two_input_neuron, two_input_neuron_squares
 from lava.lib.demos.object_tracking.util import grayscale_conversion, scale_image, draw_rectangule, normalize_image
 
 def SQFIFF(frame, template ):
