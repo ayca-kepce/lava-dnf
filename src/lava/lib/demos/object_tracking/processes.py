@@ -99,3 +99,23 @@ class TemplateMatching(AbstractProcess):
         self.a_in = InPort(shape=tuple(frame_shape))
         self.a_in_recv = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
         self.s_out = OutPort(shape=tuple(frame_shape))
+
+
+class OutputDNF(AbstractProcess):
+    """Executes the template matching algorithm.
+
+    intialize the TemplateMatchingProcess
+
+        Parameters
+        ------
+        frame_shape : ndarray
+            Shape of the frame, used while defining the size of the InPorts and OutPorts
+
+    """
+
+    def __init__(self, **kwargs: ty.Any):
+        super().__init__(**kwargs)
+        frame_shape = kwargs.get("frame_shape")
+        self.output_map = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
+        self.a_in = InPort(shape=tuple(frame_shape))
+        self.s_out = OutPort(shape=tuple(frame_shape))

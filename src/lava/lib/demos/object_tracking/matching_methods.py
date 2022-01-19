@@ -35,14 +35,13 @@ from lava.lib.demos.object_tracking.processes import (TemplateMatching,
 from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, two_input_neuron, two_input_neuron_squares
 from lava.lib.demos.object_tracking.util import grayscale_conversion, scale_image, draw_rectangule, normalize_image
 
-def SQFIFF(frame, template ):
+def SQDIFF(frame, template ):
     #
     frame_input = FrameInput(frame=frame)
 
     # neuron population to subtract the mean from frame input
     subtraction = two_input_neuron_squares(shape=tuple(frame.shape))
     frame_input.s_out.connect(subtraction.a_in1)
-
 
     # create the kernel to be convolved
     kernel = ConvolutionKernel(template=-template)
@@ -65,7 +64,16 @@ def SQFIFF(frame, template ):
 
     frame_input.stop()
 
-def CCORR(frame, template):
+def CCORR(frame, template, scale_factor):
+    # hold rgb frame and template
+    frame_orig = frame
+    template_orig = template
+    # check if the frame and the template are provided in grayscale, convert if not
+    frame = grayscale_conversion(frame)
+    template = grayscale_conversion(template)
+    # downsample the frame and the template in order to overcome the memory issue
+    frame = scale_image(frame, scale_factor)
+    template = scale_image(template, scale_factor)
 
     # frame is given as input
     frame_input = FrameInput(frame=frame)
@@ -84,10 +92,19 @@ def CCORR(frame, template):
 
     frame_input.run(condition=RunSteps(num_steps=8),
                          run_cfg=Loihi1SimCfg(select_tag='graded', select_sub_proc_model=True))
-
-    print('SALIENCY',saliency_map.saliency_map.get())
+    sm = saliency_map.saliency_map.get()
+    print("FRAME", frame_input.frame.get())
+    print("TEMPLATE", template)
+    print('SALIENCY',sm)
 
     frame_input.stop()
+
+    plt.imshow(scale_image(sm, 1/scale_factor))
+    plt.show()
+
+    saliency_map = draw_rectangule(frame_orig, scale_image(sm, 1/scale_factor), template_orig.shape)
+    plt.imshow(saliency_map)
+    plt.show()
 
 
 def CCOEFF(frame, template, scale_factor):
@@ -97,7 +114,7 @@ def CCOEFF(frame, template, scale_factor):
     # check if the frame and the template are provided in grayscale, convert if not
     frame = grayscale_conversion(frame)
     template = grayscale_conversion(template)
-    # downsample the frame and the template in order to compete with the memory issue
+    # downsample the frame and the template in order to overcome the memory issue
     frame = scale_image(frame, scale_factor)
     template = scale_image(template, scale_factor)
 
@@ -123,10 +140,8 @@ def CCOEFF(frame, template, scale_factor):
     frame_normalized.s_out.connect(saliency_map.a_in)
 
     # create the output DNF which is a SelectiveDNF
-    #output_population = LIF(shape=tuple(frame.shape), vth=2)
-
-
-    #saliency_map.s_out.connect(output_population.a_in)
+    """output_map = OutputDNF(shape=np.array(frame.shape), vth=2, amp_exc=10, width_exc=2, global_inh=-14)
+    saliency_map.s_out.connect(output_map.a_in)"""
 
     """monitor_FN = Monitor()
     monitor_FN.probe(target=frame_normalized.s_out, num_steps=8)
@@ -142,6 +157,7 @@ def CCOEFF(frame, template, scale_factor):
     print('NORM_TEMP', tem_nor)
     print('NORM_FRAME', frame_normalized.frame_normalized.get())
     print('SALIENCY', saliency_map.saliency_map.get())
+    #print('OUTPUT', output_map.output_map.get())
 
     fm = frame_input.frame.get()
     sm = saliency_map.saliency_map.get()

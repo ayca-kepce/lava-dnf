@@ -86,8 +86,8 @@ class PyLifModel_two_input_neuron(PyLoihiProcessModel):
         a_in2_data = self.a_in2.recv()
 
         # Necessary shift to make frame normalization in the right scale
-        a_in2_data = np.right_shift(a_in2_data, self.template_size)
-
+        x = np.log2(self.template_size).astype(int)
+        a_in2_data = np.right_shift(a_in2_data, x)
         a_in_data = a_in1_data + a_in2_data
 
         neg_voltage_limit = -np.int32(self.max_uv_val) + 1

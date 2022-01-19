@@ -22,11 +22,12 @@ from lava.magma.core.run_conditions import RunSteps
 from lava.proc.lif.process import LIF
 from lava.lib.dnf.connect.connect import connect
 from lava.lib.dnf.operations.operations import Convolution, Weights
-from lava.lib.dnf.kernels.kernels import ConvolutionKernel
+from lava.lib.dnf.kernels.kernels import ConvolutionKernel, SelectiveKernel
 from lava.lib.demos.object_tracking.processes import (TemplateMatching,
                                                       TemplateNormalization,
                                                       FrameInput,
-                                                      FrameNormalization)
+                                                      FrameNormalization,
+                                                      OutputDNF)
 from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, two_input_neuron
 from lava.lib.demos.object_tracking.util import determine_scale_factor
 
@@ -149,3 +150,31 @@ class TemplateMatchingSubModel(AbstractSubProcessModel):
         self.sp23 = sp23
         proc.vars.saliency_map.alias(self.template_matching_population.vars.v)
         self.template_matching_population.out_ports.s_out.connect(proc.out_ports.s_out)
+
+
+@implements(proc=OutputDNF, protocol=LoihiProtocol)
+@requires(CPU)
+@tag('graded')
+class OutputDNFSubModel(AbstractSubProcessModel):
+    """PyLoihiProcessModel for TemplateNormalizationProcess.
+
+       Implements template matching algorithm."""
+
+    def __init__(self, proc):
+        self.frame_shape = proc.init_args.get("frame_shape")
+        self.amp_exc = proc.init_args.get("amp_exc",5)
+        self.width_exc = proc.init_args.get("width_exc", 4)
+        self.global_inh = proc.init_args.get("global_inh", -5)
+        self.vth = proc.init_args.get("vth", 5)
+
+        # create the output DNF which is a SelectiveDNF
+        self.output_population = LIF(shape=tuple(self.frame_shape), vth=self.vth)
+        proc.in_ports.a_in.connect(self.output_population.a_in)
+        kernel_selective = SelectiveKernel(amp_exc=self.amp_exc, width_exc=self.width_exc, global_inh=self.global_inh)
+        conn3, sp13, sp23 = connect(self.output_population.s_out, self.output_population.a_in, ops=[Convolution(kernel_selective)])
+
+        self.conn3 = conn3
+        self.sp13 = sp13
+        self.sp23 = sp23
+        proc.vars.output_map.alias(self.output_population.vars.v)
+        self.output_population.out_ports.s_out.connect(proc.out_ports.s_out)
