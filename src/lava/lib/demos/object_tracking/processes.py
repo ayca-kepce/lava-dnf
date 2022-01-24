@@ -36,7 +36,7 @@ class FrameInput(AbstractProcess):
         else:
             frame_shape = frame.shape
         self.frame = Var(shape=tuple(frame_shape), init=frame)
-        self.s_out = OutPort(shape=tuple(frame_shape))
+        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
 
 
 class TemplateNormalization(AbstractProcess):
@@ -75,9 +75,9 @@ class FrameNormalization(AbstractProcess):
     def __init__(self, **kwargs: ty.Any):
         super().__init__(**kwargs)
         frame_shape = kwargs.get("frame_shape")
-        self.a_in = InPort(shape=tuple(frame_shape))
-        self.s_out = OutPort(shape=tuple(frame_shape))
-        self.frame_normalized = Var(shape=tuple(frame_shape), init=np.zeros(frame_shape))
+        self.a_in = InPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
+        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
+        self.frame_normalized = Var(shape=tuple((frame_shape[0], frame_shape[1], 1)), init=np.zeros((frame_shape[0], frame_shape[1], 1)))
 
 
 class TemplateMatching(AbstractProcess):
@@ -95,10 +95,10 @@ class TemplateMatching(AbstractProcess):
     def __init__(self, **kwargs: ty.Any):
         super().__init__(**kwargs)
         frame_shape = kwargs.get("frame_shape")
-        self.saliency_map = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
-        self.a_in = InPort(shape=tuple(frame_shape))
+        self.saliency_map = Var(shape=tuple((frame_shape[0], frame_shape[1], 1)), init=np.ones((frame_shape[0], frame_shape[1], 1)))
+        self.a_in = InPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
         self.a_in_recv = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
-        self.s_out = OutPort(shape=tuple(frame_shape))
+        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
 
 
 class OutputDNF(AbstractProcess):
@@ -116,6 +116,6 @@ class OutputDNF(AbstractProcess):
     def __init__(self, **kwargs: ty.Any):
         super().__init__(**kwargs)
         frame_shape = kwargs.get("frame_shape")
-        self.output_map = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
-        self.a_in = InPort(shape=tuple(frame_shape))
-        self.s_out = OutPort(shape=tuple(frame_shape))
+        self.output_map = Var(shape=tuple((frame_shape[0], frame_shape[1], 1)), init=np.ones((frame_shape[0], frame_shape[1], 1)))
+        self.a_in = InPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
+        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))

@@ -22,6 +22,7 @@ from lava.magma.core.run_conditions import RunSteps
 from lava.proc.lif.process import LIF
 from lava.lib.dnf.connect.connect import connect
 from lava.lib.dnf.operations.operations import Convolution, Weights
+from lava.proc.conv.process import Conv
 from lava.lib.dnf.kernels.kernels import ConvolutionKernel, SelectiveKernel
 from lava.lib.demos.object_tracking.processes import (TemplateMatching,
                                                       TemplateNormalization,
@@ -29,7 +30,7 @@ from lava.lib.demos.object_tracking.processes import (TemplateMatching,
                                                       FrameNormalization,
                                                       OutputDNF)
 from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, two_input_neuron
-from lava.lib.demos.object_tracking.util import determine_scale_factor
+from lava.lib.dnf.operations.enums import ReduceMethod, BorderType
 
 
 @implements(proc=FrameInput, protocol=LoihiProtocol)
@@ -56,6 +57,8 @@ class FrameInputPyModel(PyLoihiProcessModel):
                 raise ValueError("Please provide the frame either RGB or grayscale.")
         elif len(self.frame.shape) > 3:
             raise ValueError("Please provide the frame either RGB or grayscale.")
+
+        self.frame = np.reshape(self.frame, (self.frame.shape[0], self.frame.shape[1], 1))
 
     def run_spk(self):
         # check if the frame is provided correct, convert grayscale if not
@@ -93,7 +96,7 @@ class TemplateNormalizationPyModel(PyLoihiProcessModel):
         # check if the template is provided correct, convert grayscale if not
         self.validate_template()
         # normalize the template
-        self.normalized_template = self.template - np.ones_like(self.template) * np.mean(self.template)
+        self.normalized_template = 2*(self.template - np.ones_like(self.template) * np.mean(self.template))
 
 
 @implements(proc=FrameNormalization, protocol=LoihiProtocol)
@@ -109,11 +112,12 @@ class FrameNormalizationSubModel(AbstractSubProcessModel):
         self.template_shape = proc.init_args.get("template_shape")
 
         # neuron population to subtract the mean from frame input
-        self.subtraction = two_input_neuron(shape=tuple(self.frame_shape), template_size=self.template_shape[0]*self.template_shape[1])
+        self.subtraction = two_input_neuron(shape=tuple((self.frame_shape[0], self.frame_shape[1], 1)),
+                                            template_size=self.template_shape[0]*self.template_shape[1])
         proc.in_ports.a_in.connect(self.subtraction.in_ports.a_in1)
 
         # create the kernel to be convolved
-        kernel = ConvolutionKernel(template= -np.ones(self.template_shape))
+        kernel = ConvolutionKernel(template= -np.ones((self.template_shape[0], self.template_shape[1],1)))
 
         # creating the convoluion to calculate the mean of each patch
         conn, sp1, sp2 = connect(proc.in_ports.a_in, self.subtraction.a_in2,
@@ -137,17 +141,24 @@ class TemplateMatchingSubModel(AbstractSubProcessModel):
     def __init__(self, proc):
         self.frame_shape = proc.init_args.get("frame_shape")
         self.template = proc.init_args.get("template")
-
+        self.template = np.reshape(self.template, (1, self.template.shape[0], self.template.shape[1], 1))
+        #print( "KERNEEEEEEEEEEEL",self.template)
         # connect the input frame to the neuron population of same size
-        self.template_matching_population = one_input_neuron(shape=tuple(self.frame_shape))
+        self.template_matching_population = one_input_neuron(shape=tuple((self.frame_shape[0], self.frame_shape[1], 1)))
 
         # template matching
-        kernel = ConvolutionKernel(template=self.template)
+        """kernel = ConvolutionKernel(template=self.template)
         conn3, sp13, sp23 = connect(proc.in_ports.a_in, self.template_matching_population.a_in,
-                                    ops=[Convolution(kernel=kernel)], sign_mode=1)
+                                    ops=[Convolution(kernel=kernel, border_types=BorderType.PADDED)], sign_mode=1) #ops=[Weights(1)], sign_mode =2)
         self.conn3 = conn3
         self.sp13 = sp13
-        self.sp23 = sp23
+        self.sp23 = sp23"""
+        x =np.zeros((int(self.template.shape[1]/2), int(self.template.shape[2]/2)))
+        print(x.shape)
+        self.conv = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1),
+                         weight=self.template, padding = [16, 25])
+        proc.in_ports.a_in.connect(self.conv.in_ports.s_in)
+        self.conv.out_ports.a_out.connect(self.template_matching_population.a_in)
         proc.vars.saliency_map.alias(self.template_matching_population.vars.v)
         self.template_matching_population.out_ports.s_out.connect(proc.out_ports.s_out)
 
@@ -168,13 +179,17 @@ class OutputDNFSubModel(AbstractSubProcessModel):
         self.vth = proc.init_args.get("vth", 5)
 
         # create the output DNF which is a SelectiveDNF
-        self.output_population = LIF(shape=tuple(self.frame_shape), vth=self.vth)
-        proc.in_ports.a_in.connect(self.output_population.a_in)
-        kernel_selective = SelectiveKernel(amp_exc=self.amp_exc, width_exc=self.width_exc, global_inh=self.global_inh)
-        conn3, sp13, sp23 = connect(self.output_population.s_out, self.output_population.a_in, ops=[Convolution(kernel_selective)])
+        self.output_population = LIF(shape=tuple((self.frame_shape[0], self.frame_shape[1], 1)), vth=self.vth)
+        proc.in_ports.a_in.connect(self.output_population.in_ports.a_in)
 
-        self.conn3 = conn3
-        self.sp13 = sp13
-        self.sp23 = sp23
-        proc.vars.output_map.alias(self.output_population.vars.v)
+        kernel = SelectiveKernel(amp_exc=self.amp_exc, width_exc=self.width_exc, global_inh=self.global_inh)
+        self.template = np.reshape(kernel.weights, (1, kernel.weights.shape[0], kernel.weights.shape[1], 1))
+        self.conv2 = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1),
+                         weight=self.template, padding = [int(self.template.shape[1]/2), int(self.template.shape[2]/2)])
+        self.output_population.s_out.connect(self.conv2.in_ports.s_in)
+        self.conv2.out_ports.a_out.connect(self.output_population.a_in)
+
+        self.monitor = one_input_neuron(shape=tuple((self.frame_shape[0], self.frame_shape[1], 1)))
+        self.output_population.out_ports.s_out.connect(self.monitor.in_ports.a_in)
+        proc.vars.output_map.alias(self.monitor.vars.v)
         self.output_population.out_ports.s_out.connect(proc.out_ports.s_out)

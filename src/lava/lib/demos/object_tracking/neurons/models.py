@@ -34,7 +34,7 @@ class PyLifModel_one_input_neuron(PyLoihiProcessModel):
 
     def run_spk(self):
         self.timestep_counter = self.timestep_counter + 1
-        print("timestep counter", self.timestep_counter)
+        #print("timestep counter", self.timestep_counter)
 
         # Receive synaptic input
         a_in_data = self.a_in.recv()
@@ -66,8 +66,6 @@ class PyLifModel_two_input_neuron(PyLoihiProcessModel):
     v: np.ndarray = LavaPyType(np.ndarray, np.int16)
     template_size: np.ndarray = LavaPyType(np.ndarray, np.int16)
 
-
-
     def __init__(self):
         super(PyLifModel_two_input_neuron, self).__init__()
         # Let's define some bit-widths from Loihi
@@ -80,26 +78,25 @@ class PyLifModel_two_input_neuron(PyLoihiProcessModel):
 
     def run_spk(self):
         self.timestep_counter = self.timestep_counter + 1
-        print("timestep counter", self.timestep_counter)
+        #print("timestep counter", self.timestep_counter)
         # Receive synaptic input
         a_in1_data = self.a_in1.recv()
         a_in2_data = self.a_in2.recv()
 
         # Necessary shift to make frame normalization in the right scale
-        x = np.log2(self.template_size).astype(int)
-        a_in2_data = np.right_shift(a_in2_data, x)
-        a_in_data = a_in1_data + a_in2_data
-
+        """x = np.log2(self.template_size).astype(int)
+        a_in2_data = np.sign(a_in2_data) * np.right_shift(np.abs(a_in2_data), x)"""
+        x = a_in2_data/(self.template_size)
+        a_in_data = a_in1_data + x.astype(int)
+        #print(a_in2_data)
         neg_voltage_limit = -np.int32(self.max_uv_val) + 1
         pos_voltage_limit = np.int32(self.max_uv_val) - 1
 
         self.v[:] = np.clip(a_in_data, neg_voltage_limit, pos_voltage_limit)
 
         #print("v2", self.v, "\n")
-
-        s_out = self.v
         #print("s_out2", s_out, "\n")
-        self.s_out.send(s_out)
+        self.s_out.send(self.v)
 
 @implements(proc=two_input_neuron_squares, protocol=LoihiProtocol)
 @requires(CPU)

@@ -290,8 +290,7 @@ class ConvolutionKernel(Kernel):
 
     """
     def __init__(self,
-                 template: np.ndarray,
-                 limit: ty.Optional[float] = 1.0) -> None:
+                 template: np.ndarray):
 
 
         self.template = template
