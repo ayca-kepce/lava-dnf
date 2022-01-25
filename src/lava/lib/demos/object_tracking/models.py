@@ -45,6 +45,7 @@ class FrameInputPyModel(PyLoihiProcessModel):
 
 
     def validate_frame(self):
+        print(self.frame.shape)
         # check if the frame is a numpy array, convert if not
         if not np.ndarray == type(np.ndarray):
             self.frame = np.array(self.frame)
@@ -53,6 +54,8 @@ class FrameInputPyModel(PyLoihiProcessModel):
         if len(self.frame.shape) == 3:
             if self.frame.shape[-1] == 3 or self.frame.shape[-1] == 4:
                 self.frame = cv2.cvtColor(self.frame.astype('float32'), cv2.COLOR_BGR2GRAY)
+            if self.frame.shape[-1] == 1:
+                pass
             else:
                 raise ValueError("Please provide the frame either RGB or grayscale.")
         elif len(self.frame.shape) > 3:
@@ -153,10 +156,8 @@ class TemplateMatchingSubModel(AbstractSubProcessModel):
         self.conn3 = conn3
         self.sp13 = sp13
         self.sp23 = sp23"""
-        x =np.zeros((int(self.template.shape[1]/2), int(self.template.shape[2]/2)))
-        print(x.shape)
         self.conv = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1),
-                         weight=self.template, padding = [16, 25])
+                         weight=self.template, padding = (int(self.template.shape[1]/2), int(self.template.shape[2]/2)))
         proc.in_ports.a_in.connect(self.conv.in_ports.s_in)
         self.conv.out_ports.a_out.connect(self.template_matching_population.a_in)
         proc.vars.saliency_map.alias(self.template_matching_population.vars.v)

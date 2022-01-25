@@ -98,6 +98,7 @@ class PyLifModel_two_input_neuron(PyLoihiProcessModel):
         #print("s_out2", s_out, "\n")
         self.s_out.send(self.v)
 
+
 @implements(proc=two_input_neuron_squares, protocol=LoihiProtocol)
 @requires(CPU)
 @tag('graded')

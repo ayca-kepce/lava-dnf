@@ -65,49 +65,85 @@ def SQDIFF(frame, template ):
 
     frame_input.stop()
 
-def CCORR(frame, template, scale_factor):
+def CCORR(frames, template, scale_factor):
+
     # hold rgb frame and template
-    frame_orig = frame
+    frames_orig = frames
     template_orig = template
     # check if the frame and the template are provided in grayscale, convert if not
-    """frame = grayscale_conversion(frame)
-    template = grayscale_conversion(template)
+    frames = grayscale_conversion(frames)
+    template = grayscale_conversion([template])
     # downsample the frame and the template in order to overcome the memory issue
-    frame = scale_image(frame, scale_factor)
-    template = scale_image([template], scale_factor)"""
+    frames = scale_image(frames, scale_factor)
+    template = scale_image(template, scale_factor)
+
+    """template = []
+    template.append(templates)"""
 
     # frame is given as input
-    frame_input = FrameInput(frame=frame)
+    frame_input = FrameInput(frame=frames[0])
 
-    # template matching is applied
-    saliency_map = TemplateMatching(template=template,
-                                    frame_shape=frame.shape)
+    saliency_map = TemplateMatching(template=template[0],
+                                    frame_shape=frames[0].shape)
 
     # connect the input frame to the neuron population of same size
     frame_input.s_out.connect(saliency_map.a_in)
 
     # create the output DNF which is a SelectiveDNF
-    output_population = LIF(shape=tuple(frame.shape), vth=2)
+    """output_map = OutputDNF(frame_shape=np.array(frames[0].shape), vth=200, amp_exc=2, width_exc=[3,3], global_inh=-250)
+    saliency_map.s_out.connect(output_map.a_in)"""
 
-    saliency_map.s_out.connect(output_population.a_in)
+    """monitor_FN = Monitor()
+    monitor_FN.probe(target=frame_normalized.s_out, num_steps=8)
 
-    frame_input.run(condition=RunSteps(num_steps=8),
+    monitor_TM = Monitor()
+    monitor_TM.probe(target=saliency_map.a_in, num_steps=8)"""
+    fm = []
+    sm = []
+    om = []
+
+    saliency_map.run(condition=RunSteps(num_steps=3),
+                     run_cfg=Loihi1SimCfg(select_tag='graded', select_sub_proc_model=True))
+
+    sm.append(saliency_map.saliency_map.get())
+    # om.append(output_map.output_map.get())
+    print('FRAME', frame_input.frame.get())
+    print('SALIENCY', saliency_map.saliency_map.get())
+    # print('OUTPUT', output_map.output_map.get())
+
+    plt.imshow(saliency_map.saliency_map.get())
+    plt.show()
+    frames.pop(0)
+
+    """for frame in frames:
+        frame_input.frame.set(frame)
+        saliency_map.run(condition=RunSteps(num_steps=3),
                          run_cfg=Loihi1SimCfg(select_tag='graded', select_sub_proc_model=True))
-    sm = saliency_map.saliency_map.get()
-    print("FRAME", frame_input.frame.get())
-    print("TEMPLATE", template)
-    print('SALIENCY',sm)
 
-    frame_input.stop()
+        sm.append(saliency_map.saliency_map.get())
+        om.append(output_map.output_map.get())
+
+        print('NORM_FRAME', frame_normalized.frame_normalized.get())
+        print('SALIENCY', saliency_map.saliency_map.get())
+        print('OUTPUT', output_map.output_map.get())
+
+        plt.imshow(output_map.output_map.get())
+        plt.show()"""
+
+    saliency_map.stop()
+
     sm = scale_image(sm, 1 / scale_factor)
-    fm_rect = draw_rectangule(frame_orig, sm, template_orig.shape)
+    # om = scale_image(om, 1/scale_factor)
+    #fm = draw_rectangule(frames_orig, sm, template_orig.shape)
 
-    """plt.imshow(sm)
+    """
+    plt.imshow(sm)
     plt.show()
 
-    plt.imshow(saliency_map)
+    plt.imshow(fm_rect)
     plt.show()"""
-    return sm, fm_rect
+
+    return sm, om #, fm
 
 def CCOEFF(frames, template, scale_factor):
     # hold rgb frame and template
@@ -141,8 +177,8 @@ def CCOEFF(frames, template, scale_factor):
     frame_normalized.s_out.connect(saliency_map.a_in)
 
     # create the output DNF which is a SelectiveDNF
-    output_map = OutputDNF(frame_shape=np.array(frames[0].shape), vth=200, amp_exc=2, width_exc=[3,3], global_inh=-250)
-    saliency_map.s_out.connect(output_map.a_in)
+    """output_map = OutputDNF(frame_shape=np.array(frames[0].shape), vth=200, amp_exc=2, width_exc=[3,3], global_inh=-250)
+    saliency_map.s_out.connect(output_map.a_in)"""
 
     
     """monitor_FN = Monitor()
@@ -158,13 +194,13 @@ def CCOEFF(frames, template, scale_factor):
                          run_cfg=Loihi1SimCfg(select_tag='graded', select_sub_proc_model=True))
 
     sm.append(saliency_map.saliency_map.get())
-    om.append(output_map.output_map.get())
+    #om.append(output_map.output_map.get())
     print('NORM_TEMP', tem_nor)
     #print("max of temnor", np.max(tem_nor))
     print('FRAME', frame_input.frame.get())
     print('NORM_FRAME', frame_normalized.frame_normalized.get())
     print('SALIENCY', saliency_map.saliency_map.get())
-    print('OUTPUT', output_map.output_map.get())
+    #print('OUTPUT', output_map.output_map.get())
 
     plt.imshow(saliency_map.saliency_map.get())
     plt.show()
@@ -193,8 +229,8 @@ def CCOEFF(frames, template, scale_factor):
     saliency_map.stop()
 
     sm = scale_image(sm, 1/scale_factor)
-    om = scale_image(om, 1/scale_factor)
-    fm = draw_rectangule(frames_orig, om, template_orig.shape)
+    #om = scale_image(om, 1/scale_factor)
+    fm = draw_rectangule(frames_orig, sm, template_orig.shape)
 
     """
     plt.imshow(sm)
