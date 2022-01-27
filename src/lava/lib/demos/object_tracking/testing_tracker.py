@@ -30,16 +30,20 @@ from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, t
 from lava.magma.core.run_conditions import RunSteps
 from lava.magma.core.run_configs import Loihi1SimCfg
 
-def mainkukj():
+def mainlklk():
     filename = "./images/"
     frames = [cv.imread(file) for file in sorted(glob.glob(r"./images/*.jpg"))]
     template = cv.imread(filename + "fish_template.png")
+    print("template shape", template.shape)
+    for file in sorted(glob.glob(r"./images/*.jpg")):
+        x = cv.imread(file)
+        print(file, '  ', x.shape )
 
-    #for frame in frames:
+        #for frame in frames:
         #saliency_map2 = cv.matchTemplate(frame, template, cv.TM_CCOEFF)
         #saliency_map2 = cv.resize(saliency_map2, (frame.shape[1],frame.shape[0]), interpolation=cv.INTER_AREA)
 
-    saliency_maps, output_maps, frames_rect = CCOEFF(frames=frames,template=template, scale_factor=0.3)
+    saliency_maps, output_maps, frames_rect = CCORR(frames=frames,template=template, scale_factor=1)
     generate_animation(frames_rect, output_maps, saliency_maps, "lava-fish-CCOEFF.mp4")
 
 def main():
@@ -53,9 +57,9 @@ def main():
     #frames_rect.append(fm_rect)
     saliency_maps.append(sm)
 
-    saliency_map2 = cv.matchTemplate(frame[0], template, cv.TM_CCORR)
+    #saliency_map2 = cv.matchTemplate(frame[0], template, cv.TM_CCORR)
     #saliency_map2 = cv.resize(saliency_map2, (frame.shape[1],frame.shape[0]), interpolation=cv.INTER_AREA)
-    plt.imshow(saliency_map2)
+    #plt.imshow(saliency_map2)
     plt.show()
 
 def mainrht():

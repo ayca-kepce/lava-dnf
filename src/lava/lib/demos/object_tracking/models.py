@@ -45,7 +45,6 @@ class FrameInputPyModel(PyLoihiProcessModel):
 
 
     def validate_frame(self):
-        print(self.frame.shape)
         # check if the frame is a numpy array, convert if not
         if not np.ndarray == type(np.ndarray):
             self.frame = np.array(self.frame)
@@ -117,18 +116,20 @@ class FrameNormalizationSubModel(AbstractSubProcessModel):
         # neuron population to subtract the mean from frame input
         self.subtraction = two_input_neuron(shape=tuple((self.frame_shape[0], self.frame_shape[1], 1)),
                                             template_size=self.template_shape[0]*self.template_shape[1])
+        print('SHAPE SUBTRAC', tuple((self.frame_shape[0], self.frame_shape[1], 1)))
         proc.in_ports.a_in.connect(self.subtraction.in_ports.a_in1)
 
         # create the kernel to be convolved
-        kernel = ConvolutionKernel(template= -np.ones((self.template_shape[0], self.template_shape[1],1)))
-
+        self.template= -np.ones((1,self.template_shape[0], self.template_shape[1],1))
+        print('PADDIIIIIIIIIIIIING', (int(self.template.shape[1] / 2), int(self.template.shape[2] / 2)))
         # creating the convoluion to calculate the mean of each patch
-        conn, sp1, sp2 = connect(proc.in_ports.a_in, self.subtraction.a_in2,
-                                 ops=[Convolution(kernel=kernel)], sign_mode=3)
+        self.conv0 = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1),
+                          weight=self.template,
+                          padding=(int(self.template.shape[1] / 2), int(self.template.shape[2] / 2)))
 
-        self.conn = conn
-        self.sp1 = sp1
-        self.sp2 = sp2
+        proc.in_ports.a_in.connect(self.conv0.in_ports.s_in)
+        self.conv0.out_ports.a_out.connect(self.subtraction.a_in2)
+
         proc.vars.frame_normalized.alias(self.subtraction.vars.v)
         self.subtraction.out_ports.s_out.connect(proc.out_ports.s_out)
 
@@ -158,6 +159,7 @@ class TemplateMatchingSubModel(AbstractSubProcessModel):
         self.sp23 = sp23"""
         self.conv = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1),
                          weight=self.template, padding = (int(self.template.shape[1]/2), int(self.template.shape[2]/2)))
+        print('PADIIIIIIINGGGGGGGGGGGGGG', int(self.template.shape[1]/2), int(self.template.shape[2]/2))
         proc.in_ports.a_in.connect(self.conv.in_ports.s_in)
         self.conv.out_ports.a_out.connect(self.template_matching_population.a_in)
         proc.vars.saliency_map.alias(self.template_matching_population.vars.v)
