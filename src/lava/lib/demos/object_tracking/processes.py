@@ -95,10 +95,21 @@ class TemplateMatching(AbstractProcess):
     def __init__(self, **kwargs: ty.Any):
         super().__init__(**kwargs)
         frame_shape = kwargs.get("frame_shape")
-        self.saliency_map = Var(shape=tuple((frame_shape[0], frame_shape[1], 1)), init=np.ones((frame_shape[0], frame_shape[1], 1)))
+        template = kwargs.get("template")
+        template_reshaped = np.reshape(kwargs.get("template"), (1, kwargs.get("template").shape[0], kwargs.get("template").shape[1], 1))
+        conv_type = kwargs.get("convolution_type", 'valid')
+        if conv_type == 'same':
+            conv_shape = (frame_shape[0], frame_shape[1], 1)
+        elif conv_type == 'valid':
+            conv_shape = np.array(frame_shape) - np.array(template.shape) + 1
+            conv_shape = (conv_shape[0], conv_shape[1], 1)
+        else:
+            print("The convolution type provided is unvalid. Choose either 'same' or 'valid'.")
+
+        self.saliency_map = Var(shape=tuple(conv_shape), init=np.ones(conv_shape))
         self.a_in = InPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
         self.a_in_recv = Var(shape=tuple(frame_shape), init=np.ones(frame_shape))
-        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
+        self.s_out = OutPort(shape=tuple(conv_shape))
 
 
 class OutputDNF(AbstractProcess):
@@ -115,7 +126,6 @@ class OutputDNF(AbstractProcess):
 
     def __init__(self, **kwargs: ty.Any):
         super().__init__(**kwargs)
-        frame_shape = kwargs.get("frame_shape")
-        self.output_map = Var(shape=tuple((frame_shape[0], frame_shape[1], 1)), init=np.ones((frame_shape[0], frame_shape[1], 1)))
-        self.a_in = InPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
-        self.s_out = OutPort(shape=tuple((frame_shape[0], frame_shape[1], 1)))
+        sm_shape = kwargs.get("sm_shape")
+        self.output_map = Var(shape=tuple((sm_shape[0], sm_shape[1], 1)), init=np.ones((sm_shape[0], sm_shape[1], 1)))
+        self.a_in = InPort(shape=tuple((sm_shape[0], sm_shape[1], 1)))

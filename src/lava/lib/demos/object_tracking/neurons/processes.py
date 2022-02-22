@@ -10,18 +10,20 @@ from lava.magma.core.process.ports.ports import InPort, OutPort
 class one_input_neuron(AbstractProcess):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        shape = kwargs.get("shape", (1,))
+        shape = kwargs.get("shape")
+        vth = kwargs.get("vth", 500)
 
         self.shape = shape
         self.a_in = InPort(shape=shape)
         self.s_out = OutPort(shape=shape)
         self.v = Var(shape=shape, init=0)
+        self.vth = Var(shape=shape, init=vth)
 
 
 class two_input_neuron(AbstractProcess):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        shape = kwargs.get("shape", (1,))
+        shape = kwargs.get("shape")
         template_size = kwargs.get("template_size")
 
         self.shape = shape
