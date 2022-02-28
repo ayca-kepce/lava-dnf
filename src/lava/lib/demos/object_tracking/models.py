@@ -94,7 +94,7 @@ class TemplateNormalizationPyModel(PyLoihiProcessModel):
         self.validate_template()
         # normalize the template
         self.normalized_template = self.template - np.ones_like(self.template) * np.mean(self.template)
-        #self.normalized_template = np.sign(self.normalized_template) * np.right_shift(np.abs(self.normalized_template).astype(np.int32), 5)
+        self.normalized_template = np.sign(self.normalized_template) * np.right_shift(np.abs(self.normalized_template).astype(np.int32), 5)
 
 
 

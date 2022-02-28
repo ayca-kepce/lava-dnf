@@ -13,8 +13,7 @@ import time
 import cv2 as cv
 from matplotlib import pyplot as plt
 
-from lava.lib.demos.object_tracking.matching_methods import (SQDIFF,
-                                                             CCORR,
+from lava.lib.demos.object_tracking.matching_methods import (CCORR,
                                                              CCOEFF)
 from lava.lib.demos.object_tracking.util import (grayscale_conversion,
                                                  generate_animation_compare,
@@ -25,22 +24,28 @@ from lava.lib.demos.object_tracking.util import (grayscale_conversion,
                                                  crop_template_from_scaled_frame,
                                                  determine_scale_factor)
 def main():
+    """Executes the object tracking with template matching algorithm both in Lava and in
+       OpenCV. Provide the preferences and details for the operation down below. This includes
+       giving the pathways, setting up the flags that controls saving the saliency maps on the
+       RAM, convolution type, generate video that compares two algortihms, and scaling factor.
+       If enabled, a video that compares two algorithms will be generated. Also, the maximum
+       macth for every frame will be written to a txt file."""
     save_saliency_maps = True
     convolution_type = 'valid'
-    generate_video = False
-    scaling_down = False
+    generate_video = True
+    scaling_down = True
 
     # LaSOT filenames
-    filename = r"images/lasot-protocol3-test/cosplay/cosplay/cosplay-1/img/"
-    sequence_id = "cosplay-1_CCORR_dnf"
+    """filename = r"images/lasot-protocol3-test/cosplay/cosplay/cosplay-1/img/"
+    sequence_id = "lasot/cosplay-1_CCORR_dnf"
     gt_path = filename + "../groundtruth.txt"
-    first_frame_name = "00000001.jpg"
+    first_frame_name = '00000001.jpg'"""
 
     # UAV123 filenames
-    #filename = r"images/UAV123_10fps/data_seq/UAV123_10fps/bike1/"
-    #sequence_id = "uav/bike1_CCORR_01"
-    #gt_path = filename + "images/UAV123_10fps/anno/UAV123_10fps/bike1.txt"
-    #first_frame_name = "000001.jpg"
+    filename = r"images/UAV123_10fps/data_seq/UAV123_10fps/person1/"
+    sequence_id = "uav/person1_CCOEFF_scaled"
+    gt_path = "images/UAV123_10fps/anno/UAV123_10fps/person1.txt"
+    first_frame_name = '000001.jpg'
 
     # calculate if scaling down is necessary
     if scaling_down:
@@ -50,7 +55,7 @@ def main():
         scale_factor = 1
     # read the frames, convert if not given in grayscale, downsample in order to overcome the memory issue
     frames = [cv.imread(file) for file in sorted(glob.glob(filename + "*.jpg"))]
-    frames = frames[0:2]
+    frames = frames[0:100]
     frame_shape = frames[0].shape
     frames_orig = np.copy(frames)
     frames_orig2 = np.copy(frames)
@@ -75,8 +80,6 @@ def main():
 
     # draw rectangle on the original frames given the saliency maps
     rf = draw_rectangule(frames_orig, sm, original_template_shape, convolution_type=convolution_type)
-    plt.imshow(sm[0])
-    plt.show()
 
     ### Calculate the matching with OpenCV TemplateMatching algorithm
     sm2 = []
@@ -97,7 +100,7 @@ def main():
     write_results(answers_opencv, './results/' + sequence_id + '_opencv.txt')
 
     if generate_video:
-        generate_animation_compare(sm, rf, sm2, rf2, r"./images/videos/lasot_" + sequence_id + ".mp4")
+        generate_animation_compare(sm, rf, sm2, rf2, r"./images/videos/" + sequence_id + ".mp4")
 
 
 if __name__ == "__main__":
