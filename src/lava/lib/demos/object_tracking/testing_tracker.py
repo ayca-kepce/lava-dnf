@@ -29,7 +29,11 @@ def main():
        giving the pathways, setting up the flags that controls saving the saliency maps on the
        RAM, convolution type, generate video that compares two algortihms, and scaling factor.
        If enabled, a video that compares two algorithms will be generated. Also, the maximum
-       macth for every frame will be written to a txt file."""
+       macth for every frame will be written to a txt file.
+
+       LaSOT dataset can be found here http://vision.cs.stonybrook.edu/~lasot/
+       UAV123 dataset can be found here https://cemse.kaust.edu.sa/ivul/uav123
+       """
     save_saliency_maps = True
     convolution_type = 'valid'
     generate_video = True
