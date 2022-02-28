@@ -37,13 +37,13 @@ def main():
 
     # LaSOT filenames
     """filename = r"images/lasot-protocol3-test/cosplay/cosplay/cosplay-1/img/"
-    sequence_id = "lasot/cosplay-1_CCORR_dnf"
+    sequence_id = "lasot/cosplay-1_CCOEFF_dnf"
     gt_path = filename + "../groundtruth.txt"
     first_frame_name = '00000001.jpg'"""
 
     # UAV123 filenames
     filename = r"images/UAV123_10fps/data_seq/UAV123_10fps/person1/"
-    sequence_id = "uav/person1_CCOEFF_scaled"
+    sequence_id = "uav/person1_CCOEFF"
     gt_path = "images/UAV123_10fps/anno/UAV123_10fps/person1.txt"
     first_frame_name = '000001.jpg'
 
@@ -55,7 +55,6 @@ def main():
         scale_factor = 1
     # read the frames, convert if not given in grayscale, downsample in order to overcome the memory issue
     frames = [cv.imread(file) for file in sorted(glob.glob(filename + "*.jpg"))]
-    frames = frames[0:100]
     frame_shape = frames[0].shape
     frames_orig = np.copy(frames)
     frames_orig2 = np.copy(frames)

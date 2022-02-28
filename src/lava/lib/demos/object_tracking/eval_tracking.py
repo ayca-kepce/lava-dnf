@@ -26,8 +26,8 @@ def main():
     #gt_path = r"./images/lasot-protocol3-test/cosplay/cosplay-1/groundtruth.txt"
 
     # Sequence id and path to ground truth for UAV123
-    sequence_id = "uav/building1_CCOEFF"
-    gt_path = r"images/UAV123_10fps/anno/UAV123_10fps/building1.txt"
+    sequence_id = "uav/person1_CCOEFF"
+    gt_path = r"images/UAV123_10fps/anno/UAV123_10fps/person1.txt"
 
     lava_path = r"./results/" + sequence_id + "_lava.txt"
     opencv_path = r"./results/" + sequence_id + "_opencv.txt"
