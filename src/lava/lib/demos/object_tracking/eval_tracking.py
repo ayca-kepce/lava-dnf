@@ -6,22 +6,16 @@
 Implement behaviors (process models) of the processes defined in processes.py
 For further documentation please refer to processes.py
 """
-import glob
-
-import numpy as np
 import time
-import cv2 as cv
-from matplotlib import pyplot as plt
-
 from lava.lib.demos.object_tracking.util import read_results, precision, write_precision
 
 
 def main():
     # Change these two paths only.
-    sequence_id = "cosplay-2_CCOEFF"
-    gt_path = r"./images/lasot-protocol3-test/cosplay/cosplay/cosplay-2/groundtruth.txt"
-    # sequence_id = "uav/bike1_CCORR_01"
-    # gt_path = r"images/UAV123_10fps/anno/UAV123_10fps/bike1.txt"
+    #sequence_id = "atv-1_CCOEFF"
+    #gt_path = r"./images/lasot-protocol3-test/atv/atv-1/groundtruth.txt"
+    sequence_id = "uav/boat1_CCOEFF"
+    gt_path = r"images/UAV123_10fps/anno/UAV123_10fps/boat1.txt"
 
     lava_path = r"./results/" + sequence_id + "_lava.txt"
     opencv_path = r"./results/" + sequence_id + "_opencv.txt"

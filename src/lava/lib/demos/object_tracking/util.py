@@ -13,7 +13,8 @@ from matplotlib.animation import FuncAnimation
 
 def template_resize(template):
     """Function to make the size of the template compatible
-       with the padding of lava Conv."""
+       with the padding of lava Conv. Adds a row or/and a column
+       of zeros if the dimension is even."""
     template_shape = template.shape
     if not np.mod(template_shape[0], 2):
         template = np.pad(template, ((0, 1), (0, 0)))
@@ -22,6 +23,8 @@ def template_resize(template):
     return template
 
 def grayscale_conversion(images):
+    """Function to check the shape of the frames and convert
+       to grayscale if they are not in grayscale."""
     converted_images =[]
     # check if the frame is in gray scale, convert if not
     if len(images[0].shape) == 3:
@@ -35,7 +38,9 @@ def grayscale_conversion(images):
     return converted_images
 
 
-def scale_image(images, **kwargs):
+def scale_images(images, **kwargs):
+    """Function to scale the images given the target
+       dimension or target size."""
     dimension = kwargs.pop("dimension", None)
 
     if dimension is None:
@@ -51,21 +56,15 @@ def scale_image(images, **kwargs):
     return resized
 
 
-def normalize_image(image):
-    normalized_image = np.zeros_like(image)
-    cv.normalize(image, normalized_image, 0, 255, cv.NORM_MINMAX)
-    return normalized_image
-
-
 def draw_rectangule(frames, saliency_maps, template_shape, convolution_type='valid'):
-    """ Marks the frames with tracking rectangle
-        based on the saliency map."""
+    """ Function to draw a rectangle centered on the maximum location
+        of provided the saliency map."""
     image_color_marked = []
     for saliency_map,frame in zip(saliency_maps,frames):
         # find location with the maximum value in the saliency map
         _, _, _, max_loc = cv.minMaxLoc(saliency_map)
-        #print("this is maxloc", max_loc)
-        # determine the coordinates of the rectangle (see above)
+
+        # determine the coordinates of the rectangle
         if convolution_type == 'same':
             rect_tl = [max_loc[0] - int(template_shape[1]/2),
                    max_loc[1] - int(template_shape[0]/2)]
@@ -88,7 +87,8 @@ def draw_rectangule(frames, saliency_maps, template_shape, convolution_type='val
 
 
 def generate_animation(frames, output_maps, saliency_maps, save_video_name: str):
-
+    """Function to create and save an animation of the frames, output maps and saliency
+       maps of the tracking algorithm to the given directory."""
     tot_frames = len(frames)
     max_match = np.max(saliency_maps)
 
@@ -125,6 +125,10 @@ def generate_animation(frames, output_maps, saliency_maps, save_video_name: str)
 
 
 def generate_animation_compare(saliency_maps1, frames_rect1, saliency_maps2, frames_rect2, save_video_name: str):
+    """Function to create and save an animation of the frames and saliency maps for Lava and OpenCV
+       tracking algorithms to the given directory."""
+    if len(saliency_maps1) == 0:
+        raise ValueError("Please provide saliency maps for Lava implementation. Check whether the flag 'save_saliency_maps' is true.")
 
     tot_frames = len(saliency_maps1)
     max_match1 = np.max(saliency_maps1)
@@ -135,7 +139,7 @@ def generate_animation_compare(saliency_maps1, frames_rect1, saliency_maps2, fra
 
 
     # set up the plot structure
-    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(24, 15))
+    fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(24, 15), sharex=True, sharey=True)
     for i in range(axes.shape[0]):
         for j in range(axes.shape[1]):
             axes[i, j].set_axis_off()
@@ -167,7 +171,7 @@ def generate_animation_compare(saliency_maps1, frames_rect1, saliency_maps2, fra
     animation = FuncAnimation(fig,
                               update_plot,
                               frames=tot_frames,
-                              interval=100,
+                              interval=400,
                               repeat=False,
                               blit=True)
 
@@ -176,7 +180,8 @@ def generate_animation_compare(saliency_maps1, frames_rect1, saliency_maps2, fra
 
 
 def precision(answers, groundtruths, threshold):
-
+    """Function to calculate and save the L2 norm of the prediction to the ground
+       truth for every frame, and calculate the precision score for the sequence."""
     frame_scores = []
 
     for answer, groundtruth in zip(answers, groundtruths):
@@ -188,6 +193,7 @@ def precision(answers, groundtruths, threshold):
     return frame_scores, PRE
 
 def get_answers(saliency_maps, **kwargs):
+    """Function to get the saliency maps and finds the maximum value."""
     convolution_type = kwargs.pop('convolution_type', 'valid')
     if convolution_type == 'valid':
         template_shape = kwargs.pop('template_shape')
@@ -198,11 +204,13 @@ def get_answers(saliency_maps, **kwargs):
         # find location with the maximum value in the saliency map
         _, _, _, max_loc = cv.minMaxLoc(saliency_map)
 
-        answers.append((np.array((max_loc[0], max_loc[1])) + (int((template_shape[0]+1)/2), int((template_shape[1]+1)/2))))
+        answers.append((np.array((max_loc[0], max_loc[1])) + (int((template_shape[1]+1)/2), int((template_shape[0]+1)/2))))
     return answers
 
 
 def read_results(results_path):
+    """Function to read the results and return a list of arrays
+       holding the x and y values of the location."""
     results = []
     lines = []
     with open(results_path) as f:
@@ -215,25 +223,31 @@ def read_results(results_path):
 
 
 def write_results(results, results_path):
-
+    """Function to get the maximum activation locations
+       and write these to new lines in a txt file."""
     with open(results_path, "w") as f:
         for line in results:
             total = str(line[0]) + ',' + str(line[1]) + "\n"
             f.write(total)
 
 def write_precision(frame_scores, PRE, precision_path):
+    """Function to write L2 norms of each frame to a txt file,
+       and at the end of each line the precision score of the total sequence
+       is written."""
     with open(precision_path, "w") as f:
         for line in frame_scores:
             total = str(line[0]) + ',' + str(line[1]) + ',' + str(PRE) +"\n"
             f.write(total)
 
 def crop_template_from_frame(template_path, gt_path):
+    """Function to crop the template from the frame given the
+       ground truth information. The frame should be provided in grayscale."""
     with open(gt_path, "r") as f:
         first_line = f.readline()
         line_read = first_line.strip().split(',')
         x, y, width, height = int(line_read[0]), int(line_read[1]), int(line_read[2]), int(line_read[3])
 
-        first_frame = cv.imread(template_path + '000001.jpg')
+        first_frame = cv.imread(template_path + '*000001.jpg')
         template = first_frame[y:y+height, x:x+width]
         plt.imshow(template)
         plt.show()
@@ -242,6 +256,9 @@ def crop_template_from_frame(template_path, gt_path):
 
 
 def crop_template_from_scaled_frame(frame, scale_factor, template_path, gt_path):
+    """Function to crop the template from the scaled frame given the
+       ground truth and scaling factor information. The frame should
+       be provided in grayscale."""
     with open(gt_path, "r") as f:
         first_line = f.readline()
         line_read = first_line.strip().split(',')
@@ -256,26 +273,16 @@ def crop_template_from_scaled_frame(frame, scale_factor, template_path, gt_path)
     return template, original_template_shape
 
 
-def crop_template(template_path, gt_path):
+def determine_scale_factor(template_path, gt_path, first_frame_name):
+    """Functions that makes an estimate of the correct match score and returns a scaling factor
+       which scales down the frame as if the average pixel value stays the same, while the summation
+       of the whole kernel is normalized to the maximum possible value in terms of bit precision."""
     with open(gt_path, "r") as f:
         first_line = f.readline()
         line_read = first_line.strip().split(',')
         x, y, width, height = int(line_read[0]), int(line_read[1]), int(line_read[2]), int(line_read[3])
 
-        first_frame = cv.imread(template_path + '000001.jpg')
-        template = first_frame[y:y+height, x:x+width]
-        plt.imshow(template)
-        plt.show()
-        cv.imwrite(template_path + "template.png", template)
-    return template
-
-def determine_scale_factor(template_path, gt_path):
-    with open(gt_path, "r") as f:
-        first_line = f.readline()
-        line_read = first_line.strip().split(',')
-        x, y, width, height = int(line_read[0]), int(line_read[1]), int(line_read[2]), int(line_read[3])
-
-        first_frame = cv.imread(template_path + '00000001.jpg')
+        first_frame = cv.imread(template_path + first_frame_name)
         template = first_frame[y:y + height, x:x + width]
         template = grayscale_conversion([template])[0]
     max_possible_value = 2**23 -1

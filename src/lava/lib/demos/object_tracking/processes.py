@@ -8,11 +8,9 @@ defined in models.py
 For further documentation please refer to models.py
 """
 
-import numpy as np
 from lava.magma.core.process.process import AbstractProcess
 from lava.magma.core.process.variable import Var
 from lava.magma.core.process.ports.ports import InPort, OutPort
-from lava.lib.dnf.operations.enums import ReduceMethod, BorderType
 import numpy as np
 import typing as ty
 

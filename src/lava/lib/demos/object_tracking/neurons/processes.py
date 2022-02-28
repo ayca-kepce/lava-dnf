@@ -25,7 +25,7 @@ class two_input_neuron(AbstractProcess):
         super().__init__(**kwargs)
         shape = kwargs.get("shape")
         template_size = kwargs.get("template_size")
-
+        print(template_size)
         self.shape = shape
         self.a_in1 = InPort(shape=shape)
         self.a_in2 = InPort(shape=shape)

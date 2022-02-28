@@ -8,7 +8,6 @@ For further documentation please refer to processes.py
 """
 import numpy as np
 import cv2
-import time
 
 from lava.magma.core.sync.protocols.loihi_protocol import LoihiProtocol
 from lava.magma.core.model.py.ports import PyOutPort
@@ -17,21 +16,15 @@ from lava.magma.core.resources import CPU
 from lava.magma.core.decorator import implements, requires, tag
 from lava.magma.core.model.py.model import PyLoihiProcessModel
 from lava.magma.core.model.sub.model import AbstractSubProcessModel
-from lava.magma.core.run_configs import Loihi1SimCfg
-from lava.magma.core.run_conditions import RunSteps
-from lava.proc.lif.process import LIF
-from lava.lib.dnf.connect.connect import connect
-from lava.lib.dnf.operations.operations import Convolution, Weights
 from lava.proc.conv.process import Conv
-from lava.lib.dnf.kernels.kernels import ConvolutionKernel, SelectiveKernel
+from lava.lib.dnf.kernels.kernels import SelectiveKernel
 from lava.lib.demos.object_tracking.processes import (TemplateMatching,
                                                       TemplateNormalization,
                                                       FrameInput,
                                                       FrameNormalization,
                                                       OutputDNF)
 from lava.lib.demos.object_tracking.neurons.processes import one_input_neuron, two_input_neuron
-from lava.lib.dnf.operations.enums import ReduceMethod, BorderType
-from lava.lib.demos.object_tracking.util import grayscale_conversion, scale_image, template_resize
+from lava.lib.demos.object_tracking.util import template_resize
 
 
 
@@ -101,6 +94,7 @@ class TemplateNormalizationPyModel(PyLoihiProcessModel):
         self.validate_template()
         # normalize the template
         self.normalized_template = self.template - np.ones_like(self.template) * np.mean(self.template)
+        #self.normalized_template = np.sign(self.normalized_template) * np.right_shift(np.abs(self.normalized_template).astype(np.int32), 5)
 
 
 
@@ -168,7 +162,7 @@ class TemplateMatchingSubModel(AbstractSubProcessModel):
             self.conv = Conv(input_shape=(self.frame_shape[0], self.frame_shape[1], 1), weight=self.template)
 
         else:
-            print("The convolution type provided is unvalid. Choose either 'same' or 'valid'.")
+            raise ValueError("The convolution type provided is unvalid. Choose either 'same' or 'valid'.")
 
         proc.in_ports.a_in.connect(self.conv.in_ports.s_in)
         self.conv.out_ports.a_out.connect(self.template_matching_population.a_in)
@@ -196,13 +190,11 @@ class OutputDNFSubModel(AbstractSubProcessModel):
         proc.in_ports.a_in.connect(self.output_population.in_ports.a_in)
 
         kernel = SelectiveKernel(amp_exc=self.amp_exc, width_exc=self.width_exc, global_inh=self.global_inh)
-        print("kernel", kernel.weights.shape)
         self.template = template_resize(kernel.weights)
         self.template = np.reshape(self.template, (1, self.template.shape[0], self.template.shape[1], 1))
-        print("shapee", self.template.shape)
         self.conv2 = Conv(input_shape=(self.sm_shape[0], self.sm_shape[1], 1),
-                         weight=self.template, padding = [int(self.template.shape[1]/2), int(self.template.shape[2]/2)])
-        print([int(self.template.shape[1]/2), int(self.template.shape[2]/2)])
+                          weight=self.template,
+                          padding = (int(self.template.shape[1]/2), int(self.template.shape[2]/2)))
         self.output_population.s_out.connect(self.conv2.in_ports.s_in)
         self.conv2.out_ports.a_out.connect(self.output_population.a_in)
 
