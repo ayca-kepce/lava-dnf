@@ -272,6 +272,22 @@ def crop_template_from_scaled_frame(frame, scale_factor, template_path, gt_path)
     cv.imwrite(template_path + "template.png", template)
     return template, original_template_shape
 
+def crop_template_from_scaled_frame_DAVIS(frame, scale_factor, template_path, gt_path):
+    """Function to crop the template from the scaled frame given the
+       ground truth and scaling factor information for DAVIS 2016 dataset.
+       The frame should be provided in grayscale."""
+    with open(gt_path, "r") as f:
+        first_line = f.readline()
+        line_read = first_line.strip().split(',')
+        _, x, y, width, height = int(int(line_read[0])*scale_factor), int(int(line_read[1])*scale_factor), int(int(line_read[2])*scale_factor), int(int(line_read[3])*scale_factor)
+        original_template_shape = (int(line_read[3]), int(line_read[2]))
+
+    template = frame[y:y+height, x:x+width]
+    plt.imshow(template)
+    plt.show()
+
+    cv.imwrite(template_path + "template.png", template)
+    return template, original_template_shape
 
 def determine_scale_factor(template_path, gt_path, first_frame_name):
     """Functions that makes an estimate of the correct match score and returns a scaling factor
